@@ -79,7 +79,7 @@ public class IPv4 extends IP<IPv4> {
             return new ValidationResult<>("Malformed Ip");
         }
 
-        String[] parts = ip.split("\\.");
+        String[] parts = ip.split("\\.",-1);
 
         if (parts.length != 4) {
             return new ValidationResult<>("IP must have 4 parts but found " + parts.length);

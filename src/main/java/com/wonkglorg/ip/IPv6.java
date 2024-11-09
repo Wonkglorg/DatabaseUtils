@@ -80,7 +80,7 @@ public class IPv6 extends IP<IPv6> {
         int count = (int) ip.chars().filter(ch -> ch == ':').count();
 
         //use own split method the default one omits trailing spaces
-        String[] parts = ip.split(":");
+        String[] parts = ip.split(":",-1);
 
         //special case for :: ip
         boolean isEmpty = true;
