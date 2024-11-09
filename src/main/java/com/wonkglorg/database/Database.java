@@ -37,9 +37,13 @@ public abstract class Database implements AutoCloseable {
     protected final String driver;
     protected final String classloader;
     protected final Logger logger = Logger.getLogger(Database.class.getName());
-    /** A Data Mapper used to map values for {@link #recordAdapter(Class)} for all databases */
+    /**
+     * A Data Mapper used to map values for {@link #recordAdapter(Class)} for all databases
+     */
     private static final Map<Class<?>, DataTypeHandler<?>> globalDataTypeMapper = new ConcurrentHashMap<>();
-    /** A Data Mapper used to map values for {@link #recordAdapter(Class)} for this database only */
+    /**
+     * A Data Mapper used to map values for {@link #recordAdapter(Class)} for this database only
+     */
     private final Map<Class<?>, DataTypeHandler<?>> localDataTypeMapper = new ConcurrentHashMap<>();
 
     static {
@@ -584,15 +588,17 @@ public abstract class Database implements AutoCloseable {
 
     /**
      * Adds a data mapper function used in {@link #recordAdapter(Class)}
-     * and{@link #recordIndexAdapter(Class, int)} to map records to the correct type
+     * and{@link #recordIndexAdapter(Class, int)} to map records to the correct type, <br>
+     * To globally set a data mapper use {@link #addGlobalDataMapper(Class, DataTypeHandler)}
      *
      * @param type    the type to map
      * @param handler mapper function
      * @param <T>     the type of the handler
      * @return
      */
+    @SuppressWarnings("unchecked")
     public <T> DataTypeHandler<T> addDataMapper(Class<T> type, DataTypeHandler<T> handler) {
-        return (DataTypeHandler<T>) globalDataTypeMapper.put(type, handler);
+        return (DataTypeHandler<T>) localDataTypeMapper.put(type, handler);
     }
 
     /**
