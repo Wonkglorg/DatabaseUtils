@@ -6,7 +6,6 @@ import com.wonkglorg.database.exceptions.IncorrectTypeConversionException;
 import com.wonkglorg.database.response.*;
 import com.wonkglorg.interfaces.functional.checked.CheckedConsumer;
 import com.wonkglorg.interfaces.functional.checked.CheckedFunction;
-import com.wonkglorg.database.datatypes.DataTypeHandler;
 import com.wonkglorg.ip.IPv4;
 import com.wonkglorg.ip.IPv6;
 
@@ -16,10 +15,11 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.RecordComponent;
-import java.sql.Date;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -37,34 +37,37 @@ public abstract class Database implements AutoCloseable {
     protected final String driver;
     protected final String classloader;
     protected final Logger logger = Logger.getLogger(Database.class.getName());
-    private static final Map<Class<?>, DataTypeHandler<?>> dataTypeMapper = new ConcurrentHashMap<>();
+    /** A Data Mapper used to map values for {@link #recordAdapter(Class)} for all databases */
+    private static final Map<Class<?>, DataTypeHandler<?>> globalDataTypeMapper = new ConcurrentHashMap<>();
+    /** A Data Mapper used to map values for {@link #recordAdapter(Class)} for this database only */
+    private final Map<Class<?>, DataTypeHandler<?>> localDataTypeMapper = new ConcurrentHashMap<>();
 
     static {
-        dataTypeMapper.put(Blob.class, new TypeHandlerBlob());
-        dataTypeMapper.put(Boolean.class, new TypeHandlerBoolean());
-        dataTypeMapper.put(boolean.class, new TypeHandlerBoolean());
-        dataTypeMapper.put(Byte.class, new TypeHandlerByte());
-        dataTypeMapper.put(byte.class, new TypeHandlerByte());
-        dataTypeMapper.put(byte[].class, new TypeHandlerByteArray());
-        dataTypeMapper.put(Character.class, new TypeHandlerChar());
-        dataTypeMapper.put(char.class, new TypeHandlerChar());
-        dataTypeMapper.put(Date.class, new TypeHandlerDate());
-        dataTypeMapper.put(Double.class, new TypeHandlerDouble());
-        dataTypeMapper.put(double.class, new TypeHandlerDouble());
-        dataTypeMapper.put(Float.class, new TypeHandlerFloat());
-        dataTypeMapper.put(float.class, new TypeHandlerFloat());
-        dataTypeMapper.put(Image.class, new TypeHandlerImage());
-        dataTypeMapper.put(Integer.class, new TypeHandlerInteger());
-        dataTypeMapper.put(int.class, new TypeHandlerInteger());
-        dataTypeMapper.put(Long.class, new TypeHandlerLong());
-        dataTypeMapper.put(long.class, new TypeHandlerLong());
-        dataTypeMapper.put(Short.class, new TypeHandlerShort());
-        dataTypeMapper.put(short.class, new TypeHandlerShort());
-        dataTypeMapper.put(String.class, new TypeHandlerString());
-        dataTypeMapper.put(Time.class, new TypeHandlerTime());
-        dataTypeMapper.put(Timestamp.class, new TypeHandlerTimeStamp());
-        dataTypeMapper.put(IPv4.class, new TypeHandlerIpv4());
-        dataTypeMapper.put(IPv6.class, new TypeHandlerIpv6());
+        globalDataTypeMapper.put(Blob.class, new TypeHandlerBlob());
+        globalDataTypeMapper.put(Boolean.class, new TypeHandlerBoolean());
+        globalDataTypeMapper.put(boolean.class, new TypeHandlerBoolean());
+        globalDataTypeMapper.put(Byte.class, new TypeHandlerByte());
+        globalDataTypeMapper.put(byte.class, new TypeHandlerByte());
+        globalDataTypeMapper.put(byte[].class, new TypeHandlerByteArray());
+        globalDataTypeMapper.put(Character.class, new TypeHandlerChar());
+        globalDataTypeMapper.put(char.class, new TypeHandlerChar());
+        globalDataTypeMapper.put(Date.class, new TypeHandlerDate());
+        globalDataTypeMapper.put(Double.class, new TypeHandlerDouble());
+        globalDataTypeMapper.put(double.class, new TypeHandlerDouble());
+        globalDataTypeMapper.put(Float.class, new TypeHandlerFloat());
+        globalDataTypeMapper.put(float.class, new TypeHandlerFloat());
+        globalDataTypeMapper.put(Image.class, new TypeHandlerImage());
+        globalDataTypeMapper.put(Integer.class, new TypeHandlerInteger());
+        globalDataTypeMapper.put(int.class, new TypeHandlerInteger());
+        globalDataTypeMapper.put(Long.class, new TypeHandlerLong());
+        globalDataTypeMapper.put(long.class, new TypeHandlerLong());
+        globalDataTypeMapper.put(Short.class, new TypeHandlerShort());
+        globalDataTypeMapper.put(short.class, new TypeHandlerShort());
+        globalDataTypeMapper.put(String.class, new TypeHandlerString());
+        globalDataTypeMapper.put(Time.class, new TypeHandlerTime());
+        globalDataTypeMapper.put(Timestamp.class, new TypeHandlerTimeStamp());
+        globalDataTypeMapper.put(IPv4.class, new TypeHandlerIpv4());
+        globalDataTypeMapper.put(IPv6.class, new TypeHandlerIpv6());
     }
 
 
@@ -192,7 +195,7 @@ public abstract class Database implements AutoCloseable {
             RecordComponent[] components = record.getClass().getRecordComponents();
             for (int i = 0; i < components.length; i++) {
                 Object value = components[i].getAccessor().invoke(record);
-                dataTypeMapper.get(value.getClass()).setParameter(statement, i + 1 + offset, value);
+                globalDataTypeMapper.get(value.getClass()).setParameter(statement, i + 1 + offset, value);
             }
         } catch (Exception e) {
             logger.log(Level.SEVERE, e.getMessage(), e);
@@ -227,10 +230,14 @@ public abstract class Database implements AutoCloseable {
                     RecordComponent component = components[i];
                     columnName = component.getName();
                     type = component.getType();
-                    var mappingFunction = dataTypeMapper.get(type);
+                    //check local first then global
+                    var mappingFunction = localDataTypeMapper.get(type);
                     if (mappingFunction == null) {
-                        throw new NullPointerException(
-                                "Data type %s does not have a valid mapping function".formatted(type));
+                        mappingFunction = globalDataTypeMapper.get(type);
+                        if (mappingFunction == null) {
+                            throw new NullPointerException(
+                                    "Data type %s does not have a valid mapping function".formatted(type));
+                        }
                     }
 
                     if (useIndex) {
@@ -563,7 +570,7 @@ public abstract class Database implements AutoCloseable {
 
     /**
      * Adds a data mapper function used in {@link #recordAdapter(Class)}
-     * and{@link #recordIndexAdapter(Class, int)} to map records to the correct type
+     * and{@link #recordIndexAdapter(Class, int)} to map records to the correct type for all databases created
      *
      * @param type    the type to map
      * @param handler mapper function
@@ -571,8 +578,21 @@ public abstract class Database implements AutoCloseable {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public static <T> DataTypeHandler<T> addDataMapper(Class<T> type, DataTypeHandler<T> handler) {
-        return (DataTypeHandler<T>) dataTypeMapper.put(type, handler);
+    public static <T> DataTypeHandler<T> addGlobalDataMapper(Class<T> type, DataTypeHandler<T> handler) {
+        return (DataTypeHandler<T>) globalDataTypeMapper.put(type, handler);
+    }
+
+    /**
+     * Adds a data mapper function used in {@link #recordAdapter(Class)}
+     * and{@link #recordIndexAdapter(Class, int)} to map records to the correct type
+     *
+     * @param type    the type to map
+     * @param handler mapper function
+     * @param <T>     the type of the handler
+     * @return
+     */
+    public <T> DataTypeHandler<T> addDataMapper(Class<T> type, DataTypeHandler<T> handler) {
+        return (DataTypeHandler<T>) globalDataTypeMapper.put(type, handler);
     }
 
     /**
@@ -585,7 +605,7 @@ public abstract class Database implements AutoCloseable {
      */
     @SuppressWarnings("unchecked")
     public static <T> DataTypeHandler<T> removeDataMapper(Class<T> type) {
-        return (DataTypeHandler<T>) dataTypeMapper.remove(type);
+        return (DataTypeHandler<T>) globalDataTypeMapper.remove(type);
     }
 
     public enum DatabaseType {
