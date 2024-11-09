@@ -2,8 +2,6 @@ package com.wonkglorg.database.datatypes;
 
 
 
-import com.wonkglorg.interfaces.functional.database.DataTypeHandler;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.io.ByteArrayInputStream;

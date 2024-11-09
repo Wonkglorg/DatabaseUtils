@@ -1,4 +1,4 @@
-package com.wonkglorg.interfaces.functional.database;
+package com.wonkglorg.database.datatypes;
 
 import com.wonkglorg.database.Database;
 

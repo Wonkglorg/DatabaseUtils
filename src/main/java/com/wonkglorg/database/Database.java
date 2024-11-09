@@ -6,7 +6,7 @@ import com.wonkglorg.database.exceptions.IncorrectTypeConversionException;
 import com.wonkglorg.database.response.*;
 import com.wonkglorg.interfaces.functional.checked.CheckedConsumer;
 import com.wonkglorg.interfaces.functional.checked.CheckedFunction;
-import com.wonkglorg.interfaces.functional.database.DataTypeHandler;
+import com.wonkglorg.database.datatypes.DataTypeHandler;
 import com.wonkglorg.ip.IPv4;
 import com.wonkglorg.ip.IPv6;
 
@@ -20,6 +20,7 @@ import java.sql.Date;
 import java.sql.*;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
@@ -36,7 +37,7 @@ public abstract class Database implements AutoCloseable {
     protected final String driver;
     protected final String classloader;
     protected final Logger logger = Logger.getLogger(Database.class.getName());
-    private static final Map<Class<?>, DataTypeHandler<?>> dataTypeMapper = new HashMap<>();
+    private static final Map<Class<?>, DataTypeHandler<?>> dataTypeMapper = new ConcurrentHashMap<>();
 
     static {
         dataTypeMapper.put(Blob.class, new TypeHandlerBlob());

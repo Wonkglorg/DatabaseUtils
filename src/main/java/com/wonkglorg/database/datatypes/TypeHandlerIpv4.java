@@ -1,6 +1,5 @@
 package com.wonkglorg.database.datatypes;
 
-import com.wonkglorg.interfaces.functional.database.DataTypeHandler;
 import com.wonkglorg.ip.IPv4;
 
 import java.sql.PreparedStatement;

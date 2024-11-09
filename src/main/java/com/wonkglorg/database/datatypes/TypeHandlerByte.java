@@ -2,8 +2,6 @@ package com.wonkglorg.database.datatypes;
 
 
 
-import com.wonkglorg.interfaces.functional.database.DataTypeHandler;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
