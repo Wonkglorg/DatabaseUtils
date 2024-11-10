@@ -3,8 +3,6 @@ package com.wonkglorg.database;
 
 import com.wonkglorg.database.datatypes.*;
 import com.wonkglorg.database.exceptions.IncorrectTypeConversionException;
-import com.wonkglorg.database.response.*;
-import com.wonkglorg.interfaces.functional.checked.CheckedConsumer;
 import com.wonkglorg.interfaces.functional.checked.CheckedFunction;
 import com.wonkglorg.ip.IPv4;
 import com.wonkglorg.ip.IPv6;
@@ -21,8 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -172,8 +168,7 @@ public abstract class Database implements AutoCloseable {
      * @param <T>       the type of the record
      * @return the list of records or null if an error occurred
      */
-    public <T extends Record> List<T> mapRecords(ResultSet resultSet,
-                                                 CheckedFunction<ResultSet, T> adapter) {
+    public <T extends Record> List<T> mapRecords(ResultSet resultSet, CheckedFunction<ResultSet, T> adapter) {
         try {
             List<T> list = new ArrayList<>();
             while (resultSet.next()) {
@@ -217,8 +212,7 @@ public abstract class Database implements AutoCloseable {
      * @param <T>         the type of the record
      * @return the adapter to convert the result set to a record
      */
-    protected <T extends Record> CheckedFunction<ResultSet, T> genericRecordAdapter(
-            Class<T> recordClass, boolean useIndex, int offset) {
+    private  <T extends Record> CheckedFunction<ResultSet, T> genericRecordAdapter(Class<T> recordClass, boolean useIndex, int offset) {
         return resultSet -> {
             Class<?> type = null;
             String columnName = null;
@@ -239,8 +233,7 @@ public abstract class Database implements AutoCloseable {
                     if (mappingFunction == null) {
                         mappingFunction = globalDataTypeMapper.get(type);
                         if (mappingFunction == null) {
-                            throw new NullPointerException(
-                                    "Data type %s does not have a valid mapping function".formatted(type));
+                            throw new NullPointerException("Data type %s does not have a valid mapping function".formatted(type));
                         }
                     }
 
@@ -255,19 +248,16 @@ public abstract class Database implements AutoCloseable {
                             .map(RecordComponent::getType)//
                             .toArray(Class<?>[]::new)).newInstance(args);
                 } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(
-                            "Failed to create record: " + recordClass.getName() + " with args: "
-                                    + Arrays.toString(args), e);
+                    throw new RuntimeException("Failed to create record: " + recordClass.getName() + " with args: " + Arrays.toString(args), e);
                 }
 
             } catch (SQLException e) {
-                throw new IncorrectTypeConversionException(
-                        "Failed to map record components: type(" + type + ") referenceName(" + columnName +
-                                ")",
-                        columnName, type, e);
+                throw new IncorrectTypeConversionException("Failed to map record components: type(" + type + ") referenceName(" + columnName + ")", columnName, type, e);
             }
         };
     }
+
+    //todo rework this to not need some weird stupid extras to work
 
     /**
      * Maps a record constructor to its matching sql columns (names MUST match, or it will not work)
@@ -279,8 +269,8 @@ public abstract class Database implements AutoCloseable {
      * @param <T>         the type of the record
      * @return the adapter to convert the result set to a record
      */
-    public <T extends Record> CheckedFunction<ResultSet, T> recordAdapter(Class<T> recordClass) {
-        return genericRecordAdapter(recordClass, false, 0);
+    public <T extends Record> T recordAdapter(Class<T> recordClass, ResultSet resultSet) {
+        return genericRecordAdapter(recordClass, false, 0).apply(resultSet);
     }
 
     /**
@@ -295,21 +285,8 @@ public abstract class Database implements AutoCloseable {
      * @param offset      the offset to start (default:0)  starts at index 1
      * @return the adapter to convert the result set to a record
      */
-    public <T extends Record> CheckedFunction<ResultSet, T> recordIndexAdapter(Class<T> recordClass,
-                                                                               int offset) {
-        return genericRecordAdapter(recordClass, true, offset);
-    }
-
-
-    public <T> T getSingleObject(ResultSet resultSet, CheckedFunction<ResultSet, T> adapter) {
-        try {
-            if (resultSet.next()) {
-                return adapter.apply(resultSet);
-            }
-        } catch (SQLException e) {
-            logger.log(Level.SEVERE, e.getMessage(), e);
-        }
-        return null;
+    public <T extends Record> T recordIndexAdapter(Class<T> recordClass, ResultSet resultSet, int offset) {
+        return genericRecordAdapter(recordClass, true, offset).apply(resultSet);
     }
 
     /**
@@ -329,6 +306,16 @@ public abstract class Database implements AutoCloseable {
         return null;
     }
 
+    //todo how do I ensure the connection is released after use? Make my own connection object that auto closes after x happens?
+    public PreparedStatement prepareStatement(String sql) {
+        try {
+            return getConnection().prepareStatement(sql);
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, e.getMessage(), e);
+        }
+        return null;
+    }
+
     /**
      * Checks the current database the connection is connected to
      *
@@ -336,8 +323,7 @@ public abstract class Database implements AutoCloseable {
      */
     public String checkCurrentDatabase(Connection connection) {
 
-        try (Statement stmt = connection.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT DB_NAME() AS CurrentDB")) {
+        try (Statement stmt = connection.createStatement(); ResultSet rs = stmt.executeQuery("SELECT DB_NAME() AS CurrentDB")) {
             if (rs.next()) {
                 return rs.getString("CurrentDB");
             }
@@ -347,215 +333,11 @@ public abstract class Database implements AutoCloseable {
         return null;
     }
 
-    public static byte[] convertToByteArray(BufferedImage image, String formatType)
-            throws IOException {
+    public static byte[] convertToByteArray(BufferedImage image, String formatType) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(image, formatType, baos);
         return baos.toByteArray();
     }
-
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query the query to execute
-     */
-    public abstract DatabaseResponse execute(CheckedConsumer<Connection> query);
-
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query the query to execute
-     * @return amount of rows affected
-     */
-    public abstract DatabaseUpdateResponse executeUpdate(CheckedFunction<Connection, Integer> query);
-
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query  the query to execute
-     * @param result the result of the query
-     * @return DatabaseResponse
-     */
-
-    public abstract DatabaseUpdateResponse executeUpdate(
-            CheckedFunction<Connection, PreparedStatement> query,
-            CheckedFunction<PreparedStatement, Integer> result);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query the query to execute
-     * @return the result of the query
-     */
-
-    public abstract DatabaseResultSetResponse executeQuery(
-            CheckedFunction<Connection, ResultSet> query);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query  the query to execute
-     * @param result the result of the query
-     * @return DatabaseResponse
-     */
-    public abstract DatabaseResultSetResponse executeQuery(
-            CheckedFunction<Connection, PreparedStatement> query,
-            CheckedFunction<PreparedStatement, ResultSet> result);
-
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param adapter the query to execute
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseObjResponse<T> executeObjQuery(
-            CheckedFunction<Connection, List<T>> adapter);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query  the query to execute
-     * @param result the result of the query
-     * @param <T>    the type of the object to return
-     * @return DatabaseResponse
-     */
-
-    public abstract <T> DatabaseObjResponse<T> executeObjQuery(
-            CheckedFunction<Connection, ResultSet> query, CheckedFunction<ResultSet, List<T>> result);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param adapter the adapter to convert the result to a single object
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseSingleObjResponse<T> executeSingleObjQuery(
-            CheckedFunction<Connection, T> adapter);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query   the query to execute
-     * @param adapter the adapter to convert the result to a single object
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseSingleObjResponse<T> executeSingleObjQuery(
-            CheckedFunction<Connection, ResultSet> query, CheckedFunction<ResultSet, T> adapter);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done
-     *
-     * @param query the query to execute
-     * @return the result of the query
-     */
-
-    public abstract DatabaseResponse executeUnchecked(Consumer<Connection> query);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done not handle exceptions automatically
-     *
-     * @param query the query to execute
-     * @return amount of rows affected
-     */
-    public abstract DatabaseUpdateResponse executeUpdateUnchecked(
-            Function<Connection, Integer> query);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done not handle exceptions automatically
-     *
-     * @param query  the query to execute
-     * @param result the result of the query
-     * @return DatabaseResponse
-     */
-    public abstract DatabaseUpdateResponse executeUpdateUnchecked(
-            Function<Connection, PreparedStatement> query, Function<PreparedStatement, Integer> result);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done not handle exceptions automatically
-     *
-     * @param query the query to execute
-     * @return the result of the query
-     */
-    public abstract DatabaseResultSetResponse executeQueryUnchecked(
-            Function<Connection, ResultSet> query);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done not handle exceptions automatically
-     *
-     * @param query  the query to execute
-     * @param result the result of the query
-     * @return DatabaseResponse
-     */
-    public abstract DatabaseResultSetResponse executeQueryUnchecked(
-            Function<Connection, PreparedStatement> query,
-            Function<PreparedStatement, ResultSet> result);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done does not handle exceptions automatically
-     *
-     * @param query the query to execute
-     * @param <T>   the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseObjResponse<T> executeObjQueryUnchecked(
-            Function<Connection, List<T>> query);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done does not handle exceptions automatically
-     *
-     * @param query   the query to execute
-     * @param adapter the adapter to convert the result to a list of objects
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseObjResponse<T> executeObjQueryUnchecked(
-            Function<Connection, ResultSet> query, Function<ResultSet, List<T>> adapter);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done does not handle exceptions automatically
-     *
-     * @param adapter the adapter to convert the result to a single object
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseSingleObjResponse<T> executeSingleObjQueryUnchecked(
-            Function<Connection, T> adapter);
-
-    /**
-     * Executes the given query with a connection and automatically releases the connection after the
-     * query is done does not handle exceptions automatically
-     *
-     * @param query   the query to execute
-     * @param adapter the adapter to convert the result to a single object
-     * @param <T>     the type of the object to return
-     * @return the result of the query
-     */
-    public abstract <T> DatabaseSingleObjResponse<T> executeSingleObjQueryUnchecked(
-            Function<Connection, ResultSet> query, Function<ResultSet, T> adapter);
 
     /**
      * @return the classloader path
@@ -615,11 +397,7 @@ public abstract class Database implements AutoCloseable {
     }
 
     public enum DatabaseType {
-        MYSQL("Mysql", "jdbc:mysql:", "com.mysql.cj.jdbc.Driver"),
-        SQLITE("Sqlite", "jdbc:sqlite:", "org.sqlite.JDBC"),
-        POSTGRESQL("Postgresql", "jdbc:postgresql:", "org.postgresql.Driver"),
-        SQLSERVER("SqlServer", "jdbc:sqlserver:", "com.microsoft.sqlserver.jdbc.SQLServerDriver"),
-        MARIA("MariaDB", "jdbc:mariadb:", "org.mariadb.jdbc.Driver");
+        MYSQL("Mysql", "jdbc:mysql:", "com.mysql.cj.jdbc.Driver"), SQLITE("Sqlite", "jdbc:sqlite:", "org.sqlite.JDBC"), POSTGRESQL("Postgresql", "jdbc:postgresql:", "org.postgresql.Driver"), SQLSERVER("SqlServer", "jdbc:sqlserver:", "com.microsoft.sqlserver.jdbc.SQLServerDriver"), MARIA("MariaDB", "jdbc:mariadb:", "org.mariadb.jdbc.Driver");
         private final String driver;
         private final String classLoader;
         private final String name;
