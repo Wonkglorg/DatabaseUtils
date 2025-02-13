@@ -59,6 +59,13 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 		jdbi = Jdbi.create(dataSource);
 	}
 	
+	/**
+	 * Represents a query to the database that returns some result.
+	 * @param sql The sql query to execute
+	 * @param function The function to apply to the query
+	 * @return
+	 * @param <R>
+	 */
 	public <R> R query(@Language("SQL") String sql, Function<Query, R> function) {
 		connect();
 		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
@@ -68,7 +75,12 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 		}
 	}
 	
-	public void query(@Language("SQL") String sql, Consumer<Query> function) {
+	/**
+	 * Represents a query to the database that does not return a result.
+	 * @param sql The sql query to execute
+	 * @param function The function to apply to the query
+	 */
+	public void voidQuery(@Language("SQL") String sql, Consumer<Query> function) {
 		connect();
 		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
 			function.accept(query);
