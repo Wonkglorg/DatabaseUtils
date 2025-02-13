@@ -1,19 +1,22 @@
 package com.wonkglorg.database.databases;
 
-
 import com.wonkglorg.database.Database;
+import org.intellij.lang.annotations.Language;
+import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.core.statement.Query;
 
 import javax.sql.DataSource;
-import java.util.Objects;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
-public class JdbiDatabase<T extends DataSource> extends Database<T> {
+public class JdbiDatabase<T extends DataSource> extends Database<T>{
 	protected Jdbi jdbi;
-
+	
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
 	 * * The sourcePath indicates where in the project the database file can be found, it will
@@ -39,26 +42,33 @@ public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	 * </pre>
 	 * otherwise sqlite database files will be filtered and become corrupted.
 	 *
-	 * @param sourcePath the original file to copy to a location
-	 * @param destinationPath the location to copy to
 	 */
 	public JdbiDatabase(T dataSource) {
-		super(SQLITE,dataSource);
+		super(SQLITE, dataSource);
 		connect();
 	}
-
+	
 	@Override
 	public void close() {
 		//nothing needs to be closed here
 	}
-
+	
 	public void connect() {
-		if (jdbi != null) {
+		if(jdbi != null){
 			return;
 		}
 		jdbi = Jdbi.create(dataSource);
 	}
-
+	
+	public <R> R query(@Language("SQL")String sql, Function<Query, R> function) {
+		connect();
+		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
+			return function.apply(query);
+		} catch(Exception e){
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+	
 	public Jdbi jdbi() {
 		return jdbi;
 	}
