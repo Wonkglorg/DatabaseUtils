@@ -11,7 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.logging.Level;
 
 @SuppressWarnings("unused")
-public class GenericServerDatabase extends Database {
+public class GenericServerDatabase extends Database implements Connectable {
 
     //todo rework database class to correctly handle connection strings from different database
     // types currently quite limited
@@ -30,7 +30,7 @@ public class GenericServerDatabase extends Database {
 
     public GenericServerDatabase(ConnectionBuilder builder, DatabaseType databaseType,
                                  int poolSize) {
-        this(builder, databaseType.getDriver(), databaseType.getClassLoader(), poolSize);
+        this(builder, databaseType.driver(), databaseType.classLoader(), poolSize);
     }
 
     /**
