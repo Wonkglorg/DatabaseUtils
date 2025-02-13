@@ -7,7 +7,7 @@ import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.statement.Query;
 
 import javax.sql.DataSource;
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -41,7 +41,6 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 	 * }
 	 * </pre>
 	 * otherwise sqlite database files will be filtered and become corrupted.
-	 *
 	 */
 	public JdbiDatabase(T dataSource) {
 		super(SQLITE, dataSource);
@@ -60,10 +59,19 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 		jdbi = Jdbi.create(dataSource);
 	}
 	
-	public <R> R query(@Language("SQL")String sql, Function<Query, R> function) {
+	public <R> R query(@Language("SQL") String sql, Function<Query, R> function) {
 		connect();
 		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
 			return function.apply(query);
+		} catch(Exception e){
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+	
+	public void query(@Language("SQL") String sql, Consumer<Query> function) {
+		connect();
+		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
+			function.accept(query);
 		} catch(Exception e){
 			throw new RuntimeException(e.getMessage(), e);
 		}
