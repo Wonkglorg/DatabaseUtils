@@ -11,7 +11,7 @@ import java.util.Objects;
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
-public class JdbiDatabase extends Database {
+public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	protected Jdbi jdbi;
 
 	/**
@@ -42,9 +42,8 @@ public class JdbiDatabase extends Database {
 	 * @param sourcePath the original file to copy to a location
 	 * @param destinationPath the location to copy to
 	 */
-	public JdbiDatabase(DataSource dataSource) {
-		super(SQLITE);
-		Objects.requireNonNull(dataSource);
+	public JdbiDatabase(T dataSource) {
+		super(SQLITE,dataSource);
 		connect();
 	}
 

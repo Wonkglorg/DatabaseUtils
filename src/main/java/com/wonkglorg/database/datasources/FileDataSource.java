@@ -50,6 +50,17 @@ public class FileDataSource implements DataSource {
 	 * Instantiates a new Datasource
 	 *
 	 * @param type the type of database to connect to (has to be a file based one)
+	 * @param sourceFile the location to copy it from if it exists
+	 * @param file the file to connect to (or create if absent)
+	 */
+	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file) {
+		this(type, sourceFile, file, type.driver() + file.toString());
+	}
+
+	/**
+	 * Instantiates a new Datasource
+	 *
+	 * @param type the type of database to connect to (has to be a file based one)
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
@@ -105,7 +116,7 @@ public class FileDataSource implements DataSource {
 	}
 
 	@Override
-	public Connection getConnection(){
+	public Connection getConnection() {
 		connect();
 		return connection;
 	}

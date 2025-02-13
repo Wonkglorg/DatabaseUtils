@@ -12,8 +12,7 @@ import java.sql.SQLException;
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
-public class SqliteDatabase extends Database implements Connectable {
-	private final DataSource dataSource;
+public class SqliteDatabase<T extends DataSource> extends Database<T> implements Connectable {
 
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
@@ -43,9 +42,8 @@ public class SqliteDatabase extends Database implements Connectable {
 	 * @param sourcePath the original file to copy to a location
 	 * @param destinationPath the location to copy to
 	 */
-	public SqliteDatabase(DataSource dataSource) {
-		super(SQLITE);
-		this.dataSource = dataSource;
+	public SqliteDatabase(T dataSource) {
+		super(SQLITE, dataSource);
 	}
 
 	@Override
