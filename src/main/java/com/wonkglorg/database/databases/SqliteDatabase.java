@@ -4,29 +4,16 @@ package com.wonkglorg.database.databases;
 import com.wonkglorg.database.Connectable;
 import com.wonkglorg.database.Database;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Level;
-
-import static com.wonkglorg.database.Database.SQLITE;
 
 /**
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
 public class SqliteDatabase extends Database implements Connectable {
-	protected final Path sourcePath;
-	protected final Path destinationPath;
-	protected final String databaseName;
-	protected Connection connection;
+	private final DataSource dataSource;
 
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
@@ -56,17 +43,9 @@ public class SqliteDatabase extends Database implements Connectable {
 	 * @param sourcePath the original file to copy to a location
 	 * @param destinationPath the location to copy to
 	 */
-	public SqliteDatabase(Path sourcePath, Path destinationPath) {
+	public SqliteDatabase(DataSource dataSource) {
 		super(SQLITE);
-		String name = destinationPath.getFileName().toString();
-		databaseName = name.endsWith(".db") ? name : name + ".db";
-		this.sourcePath = sourcePath;
-		this.destinationPath = destinationPath;
-		connect();
-	}
-
-	public SqliteDatabase(Path openInPath) {
-		this(openInPath, openInPath);
+		this.dataSource = dataSource;
 	}
 
 	@Override
@@ -74,84 +53,22 @@ public class SqliteDatabase extends Database implements Connectable {
 		disconnect();
 	}
 
-	/**
-	 * Opens a new Connection to the database if non exists currently
-	 */
-
-	public void connect() {
-		if (connection != null) {
-			return;
-		}
-
-		try {
-			Class.forName(getClassLoader());
-
-			File databaseFile = destinationPath.toAbsolutePath().toFile();
-			if (!databaseFile.exists()) {
-				copyDatabaseFile(databaseFile);
-			}
-			String connectionString = getDriver() + destinationPath;
-			connection = DriverManager.getConnection(connectionString);
-
-		} catch (ClassNotFoundException | SQLException | IOException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Copies the database file from the sourcePath to the destinationPath or creates a new file
-	 * if it
-	 * does not exist.
-	 *
-	 * @param databaseFile the file to copy to
-	 */
-	private void copyDatabaseFile(File databaseFile) throws IOException {
-		try (InputStream resourceStream = getResource(sourcePath.toString())) {
-			if (resourceStream != null) {
-				Files.createDirectories(destinationPath.getParent());
-				Files.copy(resourceStream, databaseFile.toPath());
-			} else {
-				boolean ignore = databaseFile.createNewFile();
-			}
-		}
-
-	}
-
 	@Override
 	public void disconnect() {
-		if (connection != null) {
-			try {
-				connection.close();
-			} catch (SQLException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-			}
+		try {
+			dataSource.getConnection().close();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
 		}
 	}
 
 
 	@Override
 	public Connection getConnection() {
-		connect();
-		return connection;
-	}
-
-	private InputStream getResource(String filename) {
-		if (filename == null) {
-			throw new IllegalArgumentException("Filename cannot be null");
-		}
-
 		try {
-			URL url = getClass().getClassLoader().getResource(filename.replace("\\\\", "/"));
-
-			if (url == null) {
-				return null;
-			}
-
-			URLConnection urlConnection = url.openConnection();
-			urlConnection.setUseCaches(false);
-			return urlConnection.getInputStream();
-		} catch (IOException ex) {
-			return null;
+			return dataSource.getConnection();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
 		}
 	}
 }

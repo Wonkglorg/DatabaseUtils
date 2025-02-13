@@ -1,15 +1,7 @@
 package com.wonkglorg.database;
 
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.logging.Level;
+import javax.sql.DataSource;
 import java.util.logging.Logger;
 
 
@@ -36,6 +28,7 @@ public abstract class Database implements AutoCloseable {
 	protected final String driver;
 	protected final String classloader;
 	protected final Logger logger = Logger.getLogger(Database.class.getName());
+	protected DataSource dataSource;
 
 	protected Database(DatabaseType databaseType) {
 		this.driver = databaseType.driver();
@@ -45,56 +38,6 @@ public abstract class Database implements AutoCloseable {
 	protected Database(final String driver, final String classLoader) {
 		this.driver = driver;
 		this.classloader = classLoader;
-	}
-
-
-	public static byte[] convertToByteArray(BufferedImage image, String formatType)
-			throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		ImageIO.write(image, formatType, baos);
-		return baos.toByteArray();
-	}
-
-	/**
-	 * Checks the current database the connection is connected to
-	 *
-	 * @return Gets the name of the database currently connected to
-	 */
-	public String checkCurrentDatabase(Connection connection) {
-
-		try (Statement stmt = connection.createStatement();
-				ResultSet rs = stmt.executeQuery("SELECT DB_NAME() AS CurrentDB")) {
-			if (rs.next()) {
-				return rs.getString("CurrentDB");
-			}
-		} catch (Exception e) {
-			throw new RuntimeException("Error logging action: " + e.getMessage());
-		}
-		return null;
-	}
-
-	/**
-	 * Close the result set and the statement
-	 *
-	 * @param resultSet the result set to close
-	 */
-	protected void closeResources(ResultSet resultSet) {
-		Statement statement = null;
-		if (resultSet != null) {
-			try {
-				statement = resultSet.getStatement();
-				resultSet.close();
-			} catch (SQLException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
-		if (statement != null) {
-			try {
-				statement.close();
-			} catch (SQLException e) {
-				logger.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
 	}
 
 	/**

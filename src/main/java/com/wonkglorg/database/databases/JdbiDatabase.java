@@ -4,23 +4,14 @@ package com.wonkglorg.database.databases;
 import com.wonkglorg.database.Database;
 import org.jdbi.v3.core.Jdbi;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.logging.Level;
+import javax.sql.DataSource;
+import java.util.Objects;
 
 /**
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
 public class JdbiDatabase extends Database {
-	protected final Path sourcePath;
-	protected final Path destinationPath;
-	protected final String databaseName;
 	protected Jdbi jdbi;
 
 	/**
@@ -51,17 +42,10 @@ public class JdbiDatabase extends Database {
 	 * @param sourcePath the original file to copy to a location
 	 * @param destinationPath the location to copy to
 	 */
-	public JdbiDatabase(Path sourcePath, Path destinationPath) {
+	public JdbiDatabase(DataSource dataSource) {
 		super(SQLITE);
-		String name = destinationPath.getFileName().toString();
-		databaseName = name.endsWith(".db") ? name : name + ".db";
-		this.sourcePath = sourcePath;
-		this.destinationPath = destinationPath;
+		Objects.requireNonNull(dataSource);
 		connect();
-	}
-
-	public JdbiDatabase(Path openInPath) {
-		this(openInPath, openInPath);
 	}
 
 	@Override
@@ -69,66 +53,11 @@ public class JdbiDatabase extends Database {
 		//nothing needs to be closed here
 	}
 
-	/**
-	 * Opens a new Connection to the database if non exists currently
-	 */
 	public void connect() {
 		if (jdbi != null) {
 			return;
 		}
-
-		try {
-			Class.forName(getClassLoader());
-
-			File databaseFile = destinationPath.toAbsolutePath().toFile();
-			if (!databaseFile.exists()) {
-				copyDatabaseFile(databaseFile);
-			}
-			String connectionString = getDriver() + destinationPath;
-			jdbi = Jdbi.create(connectionString);
-
-		} catch (ClassNotFoundException | IOException e) {
-			logger.log(Level.SEVERE, e.getMessage(), e);
-		}
-	}
-
-	/**
-	 * Copies the database file from the sourcePath to the destinationPath or creates a new file
-	 * if it
-	 * does not exist.
-	 *
-	 * @param databaseFile the file to copy to
-	 */
-	private void copyDatabaseFile(File databaseFile) throws IOException {
-		try (InputStream resourceStream = getResource(sourcePath.toString())) {
-			if (resourceStream != null) {
-				Files.createDirectories(destinationPath.getParent());
-				Files.copy(resourceStream, databaseFile.toPath());
-			} else {
-				boolean ignore = databaseFile.createNewFile();
-			}
-		}
-
-	}
-
-	private InputStream getResource(String filename) {
-		if (filename == null) {
-			throw new IllegalArgumentException("Filename cannot be null");
-		}
-
-		try {
-			URL url = getClass().getClassLoader().getResource(filename.replace("\\\\", "/"));
-
-			if (url == null) {
-				return null;
-			}
-
-			URLConnection urlConnection = url.openConnection();
-			urlConnection.setUseCaches(false);
-			return urlConnection.getInputStream();
-		} catch (IOException ex) {
-			return null;
-		}
+		jdbi = Jdbi.create(dataSource);
 	}
 
 	public Jdbi jdbi() {
