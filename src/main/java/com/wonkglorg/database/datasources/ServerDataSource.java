@@ -1,20 +1,23 @@
 package com.wonkglorg.database.datasources;
 
 import com.wonkglorg.database.Database;
+import com.wonkglorg.database.Database.DatabaseType;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.ConnectionBuilder;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.concurrent.BlockingQueue;
 import java.util.logging.Logger;
 
 public class ServerDataSource implements DataSource {
-	private final BlockingQueue<Connection> connectionPool;
-	private final Database.DatabaseType databaseType;
+	private BlockingQueue<Connection> connectionPool;
+	private DatabaseType databaseType;
 
-	public ServerDataSource(Database.DatabaseType type) {
+	public ServerDataSource(DatabaseType type) {
+	//todo properly implement connections
 	}
 
 	@Override
