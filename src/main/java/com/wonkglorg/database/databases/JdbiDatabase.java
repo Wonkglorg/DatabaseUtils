@@ -14,9 +14,9 @@ import java.util.function.Function;
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
-public class JdbiDatabase<T extends DataSource> extends Database<T>{
+public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	protected Jdbi jdbi;
-	
+
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
 	 * * The sourcePath indicates where in the project the database file can be found, it will
@@ -46,51 +46,82 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 		super(SQLITE, dataSource);
 		connect();
 	}
-	
+
+	/**
+	 * Attaches a sql interface to this jdbi connection (all resources will be automatically closed
+	 * after usage) when no return type is expected use {@link #voidAttach(Class, Consumer)} instead
+	 *
+	 * @param clazz the class should follow {@link Handle#attach(Class)} specified requirements
+	 * @param consumer the consumer of the prepared class
+	 * @return the expected value
+	 */
+	public <V, R> R attach(Class<V> clazz, Function<V, R> consumer) {
+		try (Handle handle = jdbi.open()) {
+			return consumer.apply(handle.attach(clazz));
+		}
+	}
+
 	@Override
 	public void close() {
 		//nothing needs to be closed here
 	}
-	
+
 	public void connect() {
-		if(jdbi != null){
+		if (jdbi != null) {
 			return;
 		}
+
 		jdbi = Jdbi.create(dataSource);
 	}
-	
+
+	public Jdbi jdbi() {
+		return jdbi;
+	}
+
 	/**
 	 * Represents a query to the database that returns some result.
+	 *
 	 * @param sql The sql query to execute
 	 * @param function The function to apply to the query
-	 * @return
 	 * @param <R>
+	 * @return
 	 */
 	public <R> R query(@Language("SQL") String sql, Function<Query, R> function) {
 		connect();
-		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
+		try (Handle handle = jdbi.open(); Query query = handle.createQuery(sql)) {
 			return function.apply(query);
-		} catch(Exception e){
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
 	}
-	
+
+	/**
+	 * Attaches a sql interface to this jdbi connection with no expected return (all resources
+	 * will be
+	 * automatically closed after usage)
+	 *
+	 * @param clazz the class should follow {@link Handle#attach(Class)} specified requirements
+	 * @param consumer the consumer of the prepared class
+	 */
+	public <V> void voidAttach(Class<V> clazz, Consumer<V> consumer) {
+		try (Handle handle = jdbi.open()) {
+			consumer.accept(handle.attach(clazz));
+		}
+	}
+
 	/**
 	 * Represents a query to the database that does not return a result.
+	 *
 	 * @param sql The sql query to execute
 	 * @param function The function to apply to the query
 	 */
 	public void voidQuery(@Language("SQL") String sql, Consumer<Query> function) {
 		connect();
-		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
+		try (Handle handle = jdbi.open(); Query query = handle.createQuery(sql)) {
 			function.accept(query);
-		} catch(Exception e){
+		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
 		}
-	}
-	
-	public Jdbi jdbi() {
-		return jdbi;
 	}
 }
 
