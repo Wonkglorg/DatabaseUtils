@@ -5,6 +5,7 @@ import org.intellij.lang.annotations.Language;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.statement.Query;
+import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 import javax.sql.DataSource;
 import java.util.function.Consumer;
@@ -44,6 +45,7 @@ public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	 */
 	public JdbiDatabase(T dataSource) {
 		super(SQLITE, dataSource);
+		jdbi.installPlugin(new SqlObjectPlugin());
 		connect();
 	}
 
