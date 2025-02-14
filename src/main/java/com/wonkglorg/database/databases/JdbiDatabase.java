@@ -45,7 +45,7 @@ public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	 */
 	public JdbiDatabase(T dataSource) {
 		super(SQLITE, dataSource);
-		jdbi.installPlugin(new SqlObjectPlugin());
+		jdbi().installPlugin(new SqlObjectPlugin());
 		connect();
 	}
 
