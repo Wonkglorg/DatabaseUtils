@@ -1,6 +1,6 @@
 package com.wonkglorg.database.datasources;
 
-import com.wonkglorg.database.Database;
+import com.wonkglorg.database.DatabaseType;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -17,24 +17,24 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class FileDataSource implements DataSource {
+public class FileDataSource implements DataSource{
 	private static final Logger log = Logger.getLogger(FileDataSource.class.getName());
 	protected final Path sourceDbFile;
 	protected final Path dbFile;
 	private final String connectionString;
-	private final Database.DatabaseType databaseType;
+	private final DatabaseType databaseType;
 	protected Connection connection;
-
+	
 	/**
 	 * IInstantiates a new Datasource
 	 *
 	 * @param type the type of database to connect to (has to be a file based one)
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(Database.DatabaseType type, Path file) {
+	public FileDataSource(DatabaseType type, Path file) {
 		this(type, file, file, type.driver() + file.toString());
 	}
-
+	
 	/**
 	 * Instantiates a new Datasource
 	 *
@@ -42,10 +42,10 @@ public class FileDataSource implements DataSource {
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(Database.DatabaseType type, Path file, String connectionString) {
+	public FileDataSource(DatabaseType type, Path file, String connectionString) {
 		this(type, file, file, connectionString);
 	}
-
+	
 	/**
 	 * Instantiates a new Datasource
 	 *
@@ -53,10 +53,10 @@ public class FileDataSource implements DataSource {
 	 * @param sourceFile the location to copy it from if it exists
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file) {
+	public FileDataSource(DatabaseType type, Path sourceFile, Path file) {
 		this(type, sourceFile, file, type.driver() + file.toString());
 	}
-
+	
 	/**
 	 * Instantiates a new Datasource
 	 *
@@ -64,38 +64,40 @@ public class FileDataSource implements DataSource {
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file,
-			String connectionString) {
+	public FileDataSource(DatabaseType type, Path sourceFile, Path file, String connectionString) {
 		this.databaseType = type;
 		this.sourceDbFile = sourceFile;
 		this.dbFile = file;
 		this.connectionString = connectionString;
 	}
-
+	
 	/**
 	 * Opens a new Connection to the database if non exists currently
 	 */
 	private void connect() {
-		if (connection != null) {
+		if(connection != null){
 			return;
 		}
-
-		try {
+		
+		try{
 			Class.forName(databaseType.classLoader());
-
+		} catch(ClassNotFoundException e){
+			log.log(Level.SEVERE, "Unable to find database dependency", e);
+		}
+		try{
 			Path databaseFile = dbFile;
-			if (!Files.exists(databaseFile)) {
+			if(!Files.exists(databaseFile)){
 				copyDatabaseFile(databaseFile, sourceDbFile);
 			}
 			connection = DriverManager.getConnection(connectionString);
-
-		} catch (ClassNotFoundException | IOException e) {
+			
+		} catch(IOException e){
 			log.log(Level.SEVERE, e.getMessage(), e);
-		} catch (SQLException e) {
+		} catch(SQLException e){
 			throw new RuntimeException(e);
 		}
 	}
-
+	
 	/**
 	 * Copies the database file from the sourcePath to the destinationPath or creates a new file
 	 * if it
@@ -104,78 +106,79 @@ public class FileDataSource implements DataSource {
 	 * @param databaseFile the file to copy to
 	 */
 	private void copyDatabaseFile(Path databaseFile, Path sourceFile) throws IOException {
-		try (InputStream resourceStream = getResource(sourceFile.toString())) {
-			if (resourceStream != null) {
+		try(InputStream resourceStream = getResource(sourceFile.toString())){
+			if(resourceStream != null){
 				Files.createDirectories(databaseFile.getParent());
 				Files.copy(resourceStream, databaseFile);
 			} else {
+				Files.createDirectories(databaseFile.getParent());
 				Files.createFile(databaseFile);
 			}
 		}
-
+		
 	}
-
+	
 	@Override
 	public Connection getConnection() {
 		connect();
 		return connection;
 	}
-
+	
 	@Override
 	public Connection getConnection(String username, String password) {
 		return getConnection();
 	}
-
+	
 	@Override
 	public PrintWriter getLogWriter() throws SQLException {
 		return null;
 	}
-
+	
 	@Override
 	public int getLoginTimeout() throws SQLException {
 		return 0;
 	}
-
+	
 	@Override
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		return null;
 	}
-
+	
 	private InputStream getResource(String filename) {
-		if (filename == null) {
+		if(filename == null){
 			throw new IllegalArgumentException("Filename cannot be null");
 		}
-
-		try {
+		
+		try{
 			URL url = this.getClass().getClassLoader().getResource(filename.replace("\\\\", "/"));
-
-			if (url == null) {
+			
+			if(url == null){
 				return null;
 			}
-
+			
 			URLConnection urlConnection = url.openConnection();
 			urlConnection.setUseCaches(false);
 			return urlConnection.getInputStream();
-		} catch (IOException ex) {
+		} catch(IOException ex){
 			return null;
 		}
 	}
-
+	
 	@Override
 	public boolean isWrapperFor(Class<?> iface) throws SQLException {
 		return false;
 	}
-
+	
 	@Override
 	public void setLogWriter(PrintWriter out) throws SQLException {
-
+	
 	}
-
+	
 	@Override
 	public void setLoginTimeout(int seconds) throws SQLException {
-
+	
 	}
-
+	
 	@Override
 	public <T> T unwrap(Class<T> iface) throws SQLException {
 		return null;

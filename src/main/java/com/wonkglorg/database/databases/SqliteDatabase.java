@@ -2,6 +2,7 @@ package com.wonkglorg.database.databases;
 
 import com.wonkglorg.database.Connectable;
 import com.wonkglorg.database.Database;
+import static com.wonkglorg.database.DatabaseType.SQLITE;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -44,7 +45,7 @@ public class SqliteDatabase<T extends DataSource> extends Database<T> implements
 	 */
 	public SqliteDatabase(T dataSource) {
 		super(SQLITE, dataSource);
-		
+		getConnection();
 	}
 	
 	@Override

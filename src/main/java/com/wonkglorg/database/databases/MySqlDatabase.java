@@ -1,6 +1,7 @@
 package com.wonkglorg.database.databases;
 
 
+import static com.wonkglorg.database.DatabaseType.MYSQL;
 import com.wonkglorg.database.GenericServerDatabase;
 
 import javax.sql.DataSource;

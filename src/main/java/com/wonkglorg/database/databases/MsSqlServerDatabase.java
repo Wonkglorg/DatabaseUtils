@@ -1,5 +1,6 @@
 package com.wonkglorg.database.databases;
 
+import static com.wonkglorg.database.DatabaseType.SQLSERVER;
 import com.wonkglorg.database.GenericServerDatabase;
 
 import javax.sql.DataSource;
