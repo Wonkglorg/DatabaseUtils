@@ -2,6 +2,7 @@ package com.wonkglorg.database.builder;
 
 import com.wonkglorg.database.builder.statement.Batch;
 import com.wonkglorg.database.builder.statement.Query;
+import com.wonkglorg.database.builder.statement.Script;
 import com.wonkglorg.database.builder.statement.Update;
 import org.intellij.lang.annotations.Language;
 
@@ -25,9 +26,7 @@ public class StatementBuilder{
 		return new Update(sql);
 	}
 	
-	
-	
-	
-	
-	
+	public static Script script(@Language("SQL") String sql) {
+		return new Script(sql);
+	}
 }

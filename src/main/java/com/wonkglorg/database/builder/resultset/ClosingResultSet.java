@@ -1,4 +1,4 @@
-package com.wonkglorg.database.builder.statement;
+package com.wonkglorg.database.builder.resultset;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -22,6 +22,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A ResultSet which will close the  prepared statement resulting in this resultset when closed
@@ -31,6 +32,8 @@ public class ClosingResultSet implements AutoCloseable, ResultSet{
 	private final PreparedStatement preparedStatement;
 	
 	public ClosingResultSet(ResultSet resultSet, PreparedStatement preparedStatement) {
+		Objects.requireNonNull(resultSet, "ResultSet cannot be null");
+		Objects.requireNonNull(preparedStatement, "PreparedStatement cannot be null");
 		this.resultSet = resultSet;
 		this.preparedStatement = preparedStatement;
 	}
@@ -40,15 +43,11 @@ public class ClosingResultSet implements AutoCloseable, ResultSet{
 		return resultSet.next();
 	}
 	
+	@SuppressWarnings("ConstantExpression")
 	@Override
 	public void close() throws SQLException {
-		if(resultSet != null){
-			resultSet.close();
-		}
-		if(preparedStatement != null){
-			preparedStatement.close();
-		}
-		
+		resultSet.close();
+		preparedStatement.close();
 	}
 	
 	@Override

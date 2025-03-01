@@ -6,7 +6,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public class Update extends Parameterized<Update, Object, Integer>{
+/**
+ * Represents an sql update, which can be parameterized used for single (insert, update, delete) statements
+ */
+public class Update extends Parameterized<Update, Object, Integer, PreparedStatement>{
+	
+	public Update(String sql, boolean transaction) {
+		super(sql, transaction);
+	}
 	
 	public Update(String sql) {
 		super(sql);
