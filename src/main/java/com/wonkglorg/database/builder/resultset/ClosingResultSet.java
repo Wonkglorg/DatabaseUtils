@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
 import java.net.URL;
+import java.nio.file.Path;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
@@ -53,6 +54,26 @@ public class ClosingResultSet implements AutoCloseable, ResultSet{
 	@Override
 	public boolean wasNull() throws SQLException {
 		return resultSet.wasNull();
+	}
+	
+	/**
+	 * Get a path from the result set
+	 * @param columnLabel the column label
+	 * @return the path
+	 * @throws SQLException if the column is not a path
+	 */
+	public Path getPath(String columnLabel) throws SQLException {
+		return Path.of(resultSet.getString(columnLabel));
+	}
+	
+	/**
+	 * Get a path from the result set
+	 * @param columnIndex the column index
+	 * @return the path
+	 * @throws SQLException	if the column is not a path
+	 */
+	public Path getPath(int columnIndex) throws SQLException {
+		return Path.of(resultSet.getString(columnIndex));
 	}
 	
 	@Override
