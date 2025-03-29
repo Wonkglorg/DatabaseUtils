@@ -32,7 +32,7 @@ public class FileDataSource implements DataSource{
 	 * @param file the file to connect to (or create if absent)
 	 */
 	public FileDataSource(DatabaseType type, Path file) {
-		this(type, file, file, type.driver() + file.toString());
+		this(type, file, file, type.driver() + (type.isMemory() ? "" : file.toString()));
 	}
 	
 	/**
