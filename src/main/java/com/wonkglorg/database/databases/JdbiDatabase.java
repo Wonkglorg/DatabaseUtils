@@ -1,7 +1,6 @@
 package com.wonkglorg.database.databases;
 
 import com.wonkglorg.database.Database;
-import static com.wonkglorg.database.DatabaseType.JDBC;
 import static com.wonkglorg.database.DatabaseType.SQLITE;
 import org.intellij.lang.annotations.Language;
 import org.jdbi.v3.core.Handle;
@@ -69,7 +68,7 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 	 * @param <R>
 	 * @return
 	 */
-	public <R> R query(@Language("sql") String sql,Function<Query, R> function) throws RuntimeException {
+	public <R> R query(@Language("sql") String sql, Function<Query, R> function) throws RuntimeException {
 		connect();
 		try(Handle handle = jdbi.open(); Query query = handle.createQuery(sql)){
 			return function.apply(query);
@@ -87,10 +86,10 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 	 * @param <R>
 	 * @return
 	 */
-	public <R> R query(@Language("sql") String sql, Function<Query, R> function, Function<Exception,R> onError) {
+	public <R> R query(@Language("sql") String sql, Function<Query, R> function, Function<Exception, R> onError) {
 		try{
-			return query(sql,function);
-		}catch(Exception e){
+			return query(sql, function);
+		} catch(Exception e){
 			return onError.apply(e);
 		}
 	}
@@ -120,7 +119,7 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 	 */
 	public <V> void voidAttach(Class<V> clazz, Consumer<V> consumer, Consumer<Exception> onError) {
 		try{
-			voidAttach(clazz,consumer);
+			voidAttach(clazz, consumer);
 		} catch(RuntimeException e){
 			onError.accept(e);
 		}
@@ -140,7 +139,6 @@ public class JdbiDatabase<T extends DataSource> extends Database<T>{
 			throw new RuntimeException(e.getMessage(), e);
 		}
 	}
-	
 	
 	/**
 	 * Attaches a sql interface to this jdbi connection (all resources will be automatically closed
