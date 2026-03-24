@@ -1,11 +1,9 @@
 package com.wonkglorg.database.datasources;
 
-import com.wonkglorg.database.Database;
+import com.wonkglorg.database.DatabaseType;
 
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -13,16 +11,15 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class FileDataSource implements DataSource{
+public class FileDataSource implements TypedDataSource{
 	private static final Logger log = Logger.getLogger(FileDataSource.class.getName());
 	protected final Path sourceDbFile;
 	protected final Path dbFile;
 	private final String connectionString;
-	private final Database.DatabaseType databaseType;
+	private final DatabaseType databaseType;
 	protected Connection connection;
 	
 	/**
@@ -31,7 +28,7 @@ public class FileDataSource implements DataSource{
 	 * @param type the type of database to connect to (has to be a file based one)
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(Database.DatabaseType type, Path file) {
+	public FileDataSource(DatabaseType type, Path file) {
 		this(type, file, file, type.driver() + file.toString());
 	}
 	
@@ -42,7 +39,7 @@ public class FileDataSource implements DataSource{
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(Database.DatabaseType type, Path file, String connectionString) {
+	public FileDataSource(DatabaseType type, Path file, String connectionString) {
 		this(type, file, file, connectionString);
 	}
 	
@@ -53,7 +50,7 @@ public class FileDataSource implements DataSource{
 	 * @param sourceFile the location to copy it from if it exists
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file) {
+	public FileDataSource(DatabaseType type, Path sourceFile, Path file) {
 		this(type, sourceFile, file, type.driver() + file.toString());
 	}
 	
@@ -64,7 +61,7 @@ public class FileDataSource implements DataSource{
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file, String connectionString) {
+	public FileDataSource(DatabaseType type, Path sourceFile, Path file, String connectionString) {
 		this.databaseType = type;
 		this.sourceDbFile = sourceFile;
 		this.dbFile = file;
@@ -125,21 +122,6 @@ public class FileDataSource implements DataSource{
 		return getConnection();
 	}
 	
-	@Override
-	public PrintWriter getLogWriter() throws SQLException {
-		return null;
-	}
-	
-	@Override
-	public int getLoginTimeout() throws SQLException {
-		return 0;
-	}
-	
-	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		return null;
-	}
-	
 	private InputStream getResource(String filename) {
 		if(filename == null){
 			throw new IllegalArgumentException("Filename cannot be null");
@@ -161,22 +143,7 @@ public class FileDataSource implements DataSource{
 	}
 	
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		return false;
-	}
-	
-	@Override
-	public void setLogWriter(PrintWriter out) throws SQLException {
-	
-	}
-	
-	@Override
-	public void setLoginTimeout(int seconds) throws SQLException {
-	
-	}
-	
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		return null;
+	public DatabaseType getType() {
+		return databaseType;
 	}
 }

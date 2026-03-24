@@ -1,6 +1,7 @@
 package com.wonkglorg.database;
 
-import javax.sql.DataSource;
+import com.wonkglorg.database.datasources.TypedDataSource;
+
 import java.util.logging.Logger;
 
 /**
@@ -9,20 +10,11 @@ import java.util.logging.Logger;
  * Base class for databases
  */
 @SuppressWarnings("unused")
-public abstract class Database<T extends DataSource> implements AutoCloseable{
-	public record DatabaseType(String name, String driver, String classLoader){}
-	
-	public static final DatabaseType MYSQL = new DatabaseType("Mysql", "jdbc:mysql:", "com.mysql.cj.jdbc.Driver");
-	public static final DatabaseType SQLITE = new DatabaseType("Sqlite", "jdbc:sqlite:", "org.sqlite.JDBC");
-	public static final DatabaseType POSTGRESQL = new DatabaseType("PostgreSQL", "jdbc:postgresql:", "org.postgresql.Driver");
-	public static final DatabaseType SQLSERVER = new DatabaseType("SQLServer", "jdbc:sqlserver:", "org.sqlserver.jdbc.SQLServerDriver");
-	public static final DatabaseType MARIA_DB = new DatabaseType("MariaDB", "jdbc:mariadb:", "org.mariadb.jdbc.Driver");
+public abstract class Database<T extends TypedDataSource> implements AutoCloseable{
 	protected final Logger logger = Logger.getLogger(Database.class.getName());
-	protected final DatabaseType databaseType;
 	protected final T dataSource;
 	
-	protected Database(DatabaseType databaseType, T dataSource) {
-		this.databaseType = databaseType;
+	protected Database(T dataSource) {
 		this.dataSource = dataSource;
 	}
 	
@@ -30,14 +22,14 @@ public abstract class Database<T extends DataSource> implements AutoCloseable{
 	 * @return the classloader path
 	 */
 	public String getClassLoader() {
-		return databaseType.classLoader();
+		return dataSource.getType().classLoader();
 	}
 	
 	/**
 	 * @return The database driver
 	 */
 	public String getDriver() {
-		return databaseType.driver();
+		return dataSource.getType().driver();
 	}
 	
 	/**
@@ -52,7 +44,7 @@ public abstract class Database<T extends DataSource> implements AutoCloseable{
 	}
 	
 	public DatabaseType getDatabaseType() {
-		return databaseType;
+		return dataSource.getType();
 	}
 	
 	public T getDataSource() {

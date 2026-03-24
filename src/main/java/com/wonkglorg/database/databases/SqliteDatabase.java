@@ -2,8 +2,12 @@ package com.wonkglorg.database.databases;
 
 import com.wonkglorg.database.Connectable;
 import com.wonkglorg.database.Database;
+import static com.wonkglorg.database.DatabaseType.SQLITE_MEMORY;
+import static com.wonkglorg.database.DatabaseType.SQLITE_MEMORY_SHARED;
+import com.wonkglorg.database.datasources.FileDataSource;
+import com.wonkglorg.database.datasources.MemoryDataSource;
+import com.wonkglorg.database.datasources.TypedDataSource;
 
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -11,7 +15,7 @@ import java.sql.SQLException;
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
-public class SqliteDatabase<T extends DataSource> extends Database<T> implements Connectable{
+public class SqliteDatabase<T extends TypedDataSource> extends Database<T> implements Connectable{
 	
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
@@ -40,8 +44,20 @@ public class SqliteDatabase<T extends DataSource> extends Database<T> implements
 	 *
 	 * @param dataSource the datasource of the db
 	 */
-	public SqliteDatabase(T dataSource) {
-		super(SQLITE, dataSource);
+	private SqliteDatabase(T dataSource) {
+		super(dataSource);
+	}
+	
+	public static SqliteDatabase<MemoryDataSource> createSharedMemoryDb(String memoryName) {
+		return new SqliteDatabase<>(new MemoryDataSource(SQLITE_MEMORY_SHARED, SQLITE_MEMORY_SHARED + memoryName + "?mode=memory&cache=shared"));
+	}
+	
+	public static SqliteDatabase<MemoryDataSource> createMemoryDb() {
+		return new SqliteDatabase<>(new MemoryDataSource(SQLITE_MEMORY));
+	}
+	
+	public static SqliteDatabase<FileDataSource> createDb(FileDataSource source) {
+		return new SqliteDatabase<>(source);
 	}
 	
 	@Override
