@@ -1,6 +1,6 @@
 package com.wonkglorg.database.datasources;
 
-import com.wonkglorg.database.DatabaseType;
+import com.wonkglorg.database.Database.DatabaseType;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;

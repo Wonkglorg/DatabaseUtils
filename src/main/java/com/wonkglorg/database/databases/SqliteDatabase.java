@@ -2,19 +2,16 @@ package com.wonkglorg.database.databases;
 
 import com.wonkglorg.database.Connectable;
 import com.wonkglorg.database.Database;
-import static com.wonkglorg.database.DatabaseType.SQLITE;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.regex.Pattern;
 
 /**
  * @author Wonkglorg
  */
 @SuppressWarnings("unused")
 public class SqliteDatabase<T extends DataSource> extends Database<T> implements Connectable{
-	private static final Pattern pattern = Pattern.compile(":(\\w+)");
 	
 	/**
 	 * * Creates a Sqlite database at the specified copyToPath.
@@ -41,11 +38,10 @@ public class SqliteDatabase<T extends DataSource> extends Database<T> implements
 	 * </pre>
 	 * otherwise sqlite database files will be filtered and become corrupted.
 	 *
-	 * @param dataSource the data source
+	 * @param dataSource the datasource of the db
 	 */
 	public SqliteDatabase(T dataSource) {
 		super(SQLITE, dataSource);
-		getConnection();
 	}
 	
 	@Override
@@ -70,6 +66,5 @@ public class SqliteDatabase<T extends DataSource> extends Database<T> implements
 			throw new RuntimeException(e);
 		}
 	}
-	
 }
 

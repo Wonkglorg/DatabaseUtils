@@ -1,6 +1,5 @@
 package com.wonkglorg.database.databases;
 
-import static com.wonkglorg.database.DatabaseType.SQLSERVER;
 import com.wonkglorg.database.GenericServerDatabase;
 
 import javax.sql.DataSource;
@@ -8,7 +7,7 @@ import javax.sql.DataSource;
 /**
  * IMPORTANT! Please add the Microsoft SqlServer Connector to the project if you want to use SqlServer.
  */
-public class MsSqlServerDatabase extends GenericServerDatabase{
+public class MsSqlServerDatabase extends GenericServerDatabase<DataSource>{
 	
 	public MsSqlServerDatabase(DataSource datasource) {
 		super(SQLSERVER, datasource);

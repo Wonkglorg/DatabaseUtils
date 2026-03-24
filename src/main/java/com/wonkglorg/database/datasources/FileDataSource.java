@@ -1,6 +1,6 @@
 package com.wonkglorg.database.datasources;
 
-import com.wonkglorg.database.DatabaseType;
+import com.wonkglorg.database.Database;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -22,7 +22,7 @@ public class FileDataSource implements DataSource{
 	protected final Path sourceDbFile;
 	protected final Path dbFile;
 	private final String connectionString;
-	private final DatabaseType databaseType;
+	private final Database.DatabaseType databaseType;
 	protected Connection connection;
 	
 	/**
@@ -31,8 +31,8 @@ public class FileDataSource implements DataSource{
 	 * @param type the type of database to connect to (has to be a file based one)
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(DatabaseType type, Path file) {
-		this(type, file, file, type.driver() + (type.isMemory() ? "" : file.toString()));
+	public FileDataSource(Database.DatabaseType type, Path file) {
+		this(type, file, file, type.driver() + file.toString());
 	}
 	
 	/**
@@ -42,7 +42,7 @@ public class FileDataSource implements DataSource{
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(DatabaseType type, Path file, String connectionString) {
+	public FileDataSource(Database.DatabaseType type, Path file, String connectionString) {
 		this(type, file, file, connectionString);
 	}
 	
@@ -53,7 +53,7 @@ public class FileDataSource implements DataSource{
 	 * @param sourceFile the location to copy it from if it exists
 	 * @param file the file to connect to (or create if absent)
 	 */
-	public FileDataSource(DatabaseType type, Path sourceFile, Path file) {
+	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file) {
 		this(type, sourceFile, file, type.driver() + file.toString());
 	}
 	
@@ -64,7 +64,7 @@ public class FileDataSource implements DataSource{
 	 * @param file the file to connect to (or create if absent)
 	 * @param connectionString the url to connect to the driver with if a custom one should be used
 	 */
-	public FileDataSource(DatabaseType type, Path sourceFile, Path file, String connectionString) {
+	public FileDataSource(Database.DatabaseType type, Path sourceFile, Path file, String connectionString) {
 		this.databaseType = type;
 		this.sourceDbFile = sourceFile;
 		this.dbFile = file;
@@ -81,17 +81,14 @@ public class FileDataSource implements DataSource{
 		
 		try{
 			Class.forName(databaseType.classLoader());
-		} catch(ClassNotFoundException e){
-			log.log(Level.SEVERE, "Unable to find database dependency", e);
-		}
-		try{
+			
 			Path databaseFile = dbFile;
 			if(!Files.exists(databaseFile)){
 				copyDatabaseFile(databaseFile, sourceDbFile);
 			}
 			connection = DriverManager.getConnection(connectionString);
 			
-		} catch(IOException e){
+		} catch(ClassNotFoundException | IOException e){
 			log.log(Level.SEVERE, e.getMessage(), e);
 		} catch(SQLException e){
 			throw new RuntimeException(e);
@@ -111,7 +108,6 @@ public class FileDataSource implements DataSource{
 				Files.createDirectories(databaseFile.getParent());
 				Files.copy(resourceStream, databaseFile);
 			} else {
-				Files.createDirectories(databaseFile.getParent());
 				Files.createFile(databaseFile);
 			}
 		}
