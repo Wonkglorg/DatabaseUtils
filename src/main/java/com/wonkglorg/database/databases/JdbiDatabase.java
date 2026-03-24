@@ -39,8 +39,7 @@ public class JdbiDatabase<T extends DataSource> extends Database<T> {
 	 * </pre>
 	 * otherwise sqlite database files will be filtered and become corrupted.
 	 *
-	 * @param sourcePath the original file to copy to a location
-	 * @param destinationPath the location to copy to
+	 * @param dataSource the datasource
 	 */
 	public JdbiDatabase(T dataSource) {
 		super(SQLITE,dataSource);
