@@ -1,66 +1,61 @@
 package com.wonkglorg.database.datasources;
 
-
 import com.wonkglorg.database.DatabaseType;
 
-import javax.sql.DataSource;
-import java.io.PrintWriter;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.util.concurrent.BlockingQueue;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ServerDataSource implements DataSource{
-	private BlockingQueue<Connection> connectionPool;
-	private DatabaseType databaseType;
+public class ServerDataSource implements TypedDataSource{
+	private static final Logger log = Logger.getLogger(ServerDataSource.class.getName());
 	
-	public ServerDataSource(DatabaseType type) {
-		//todo properly implement connections
+	private final DatabaseType databaseType;
+	private final String url;
+	private final String user;
+	private final String password;
+	
+	protected Connection connection;
+	
+	public ServerDataSource(DatabaseType type, String url, String user, String password) {
+		this.databaseType = type;
+		this.url = url;
+		this.user = user;
+		this.password = password;
+	}
+	
+	/**
+	 * Opens a new Connection if none exists (same behavior as FileDataSource)
+	 */
+	private synchronized void connect() {
+		try{
+			Class.forName(databaseType.classLoader());
+			
+			if(connection == null || connection.isClosed() || !connection.isValid(2)){
+				connection = new UncloseAbleConnection(DriverManager.getConnection(url, user, password));
+			}
+			
+		} catch(ClassNotFoundException e){
+			log.log(Level.SEVERE, e.getMessage(), e);
+		} catch(SQLException e){
+			throw new RuntimeException(e);
+		}
 	}
 	
 	@Override
-	public Connection getConnection() throws SQLException {
-		return null;
+	public Connection getConnection() {
+		connect();
+		return connection;
 	}
 	
 	@Override
-	public Connection getConnection(String username, String password) throws SQLException {
-		return null;
+	public Connection getConnection(String username, String password) {
+		return getConnection();
 	}
 	
 	@Override
-	public PrintWriter getLogWriter() throws SQLException {
-		return null;
-	}
-	
-	@Override
-	public int getLoginTimeout() throws SQLException {
-		return 0;
-	}
-	
-	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		return null;
-	}
-	
-	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
-		return false;
-	}
-	
-	@Override
-	public void setLogWriter(PrintWriter out) throws SQLException {
-	
-	}
-	
-	@Override
-	public void setLoginTimeout(int seconds) throws SQLException {
-	
-	}
-	
-	@Override
-	public <T> T unwrap(Class<T> iface) throws SQLException {
-		return null;
+	public DatabaseType getType() {
+		return databaseType;
 	}
 }

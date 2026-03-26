@@ -71,11 +71,7 @@ public class FileDataSource implements TypedDataSource{
 	/**
 	 * Opens a new Connection to the database if non exists currently
 	 */
-	private void connect() {
-		if(connection != null){
-			return;
-		}
-		
+	private synchronized void connect() {
 		try{
 			Class.forName(databaseType.classLoader());
 			
@@ -83,7 +79,10 @@ public class FileDataSource implements TypedDataSource{
 			if(!Files.exists(databaseFile)){
 				copyDatabaseFile(databaseFile, sourceDbFile);
 			}
-			connection = DriverManager.getConnection(connectionString);
+			
+			if(connection == null || connection.isClosed() || !connection.isValid(2)){
+				connection = new UncloseAbleConnection(DriverManager.getConnection(connectionString));
+			}
 			
 		} catch(ClassNotFoundException | IOException e){
 			log.log(Level.SEVERE, e.getMessage(), e);
