@@ -33,7 +33,7 @@ public class ServerDataSource implements TypedDataSource{
 			Class.forName(databaseType.classLoader());
 			
 			if(connection == null || connection.isClosed() || !connection.isValid(2)){
-				connection = new UncloseAbleConnection(DriverManager.getConnection(url, user, password));
+				connection = new UncloseAbleConnection(DriverManager.getConnection(getType().driver() + url, user, password));
 			}
 			
 		} catch(ClassNotFoundException e){

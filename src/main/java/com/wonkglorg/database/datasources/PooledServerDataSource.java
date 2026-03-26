@@ -38,7 +38,7 @@ public class PooledServerDataSource implements TypedDataSource{
 		}
 		
 		createdConnections++;
-		return DriverManager.getConnection(url, user, password);
+		return DriverManager.getConnection(getType().driver() + url, user, password);
 	}
 	
 	@Override
