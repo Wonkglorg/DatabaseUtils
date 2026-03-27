@@ -1,6 +1,7 @@
 package com.wonkglorg.database.datasources;
 
 import com.wonkglorg.database.DatabaseType;
+import com.wonkglorg.database.exception.DatabaseDriverNotFoundException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -47,7 +48,7 @@ public class MemoryDataSource implements TypedDataSource{
 			connection = DriverManager.getConnection(databaseType.driver() + connectionString);
 			
 		} catch(ClassNotFoundException e){
-			log.log(Level.SEVERE, e.getMessage(), e);
+			throw new DatabaseDriverNotFoundException("Database Driver does not exist for " + getType(), e);
 		} catch(SQLException e){
 			throw new RuntimeException(e);
 		}

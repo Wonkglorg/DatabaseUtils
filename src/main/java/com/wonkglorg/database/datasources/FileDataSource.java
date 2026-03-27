@@ -1,6 +1,7 @@
 package com.wonkglorg.database.datasources;
 
 import com.wonkglorg.database.DatabaseType;
+import com.wonkglorg.database.exception.DatabaseDriverNotFoundException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +12,6 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FileDataSource implements TypedDataSource{
@@ -84,9 +84,9 @@ public class FileDataSource implements TypedDataSource{
 				connection = new UncloseAbleConnection(DriverManager.getConnection(connectionString));
 			}
 			
-		} catch(ClassNotFoundException | IOException e){
-			log.log(Level.SEVERE, e.getMessage(), e);
-		} catch(SQLException e){
+		} catch(ClassNotFoundException e){
+			throw new DatabaseDriverNotFoundException("Database Driver does not exist for " + getType(), e);
+		} catch(SQLException | IOException e){
 			throw new RuntimeException(e);
 		}
 	}

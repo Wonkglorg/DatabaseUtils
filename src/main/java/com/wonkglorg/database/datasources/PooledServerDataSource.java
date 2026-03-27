@@ -1,13 +1,13 @@
 package com.wonkglorg.database.datasources;
 
 import com.wonkglorg.database.DatabaseType;
+import com.wonkglorg.database.exception.DatabaseDriverNotFoundException;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PooledServerDataSource implements TypedDataSource{
@@ -34,7 +34,7 @@ public class PooledServerDataSource implements TypedDataSource{
 		try{
 			Class.forName(databaseType.classLoader());
 		} catch(ClassNotFoundException e){
-			log.log(Level.SEVERE, e.getMessage(), e);
+			throw new DatabaseDriverNotFoundException("Database Driver does not exist for " + getType(), e);
 		}
 		
 		createdConnections++;
