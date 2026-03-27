@@ -99,7 +99,9 @@ public class FileDataSource implements TypedDataSource{
 	 * @param databaseFile the file to copy to
 	 */
 	private void copyDatabaseFile(Path databaseFile, Path sourceFile) throws IOException {
-		Files.createDirectories(databaseFile.getParent());
+		if(databaseFile.getParent() != null){
+			Files.createDirectories(databaseFile.getParent());
+		}
 		try(InputStream resourceStream = getResource(sourceFile.toString())){
 			if(resourceStream != null){
 				Files.createDirectories(databaseFile.getParent());
